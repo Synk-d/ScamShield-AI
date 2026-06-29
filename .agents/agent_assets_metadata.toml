@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "9qd8Odb86OZsbWRm_i1bb"
+uri = "file://scamshield-project.tar.gz"
+type = "unspecified"
+title = "ScamShield AI — Project Files"

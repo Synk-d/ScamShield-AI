@@ -1,0 +1,353 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: ScamShield AI API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: analyses
+    description: Scam analysis operations
+  - name: history
+    description: Analysis history operations
+  - name: stats
+    description: Dashboard statistics
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /analyses:
+    get:
+      operationId: listAnalyses
+      tags: [history]
+      summary: Get analysis history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of past analyses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Analysis"
+
+  /analyses/{id}:
+    get:
+      operationId: getAnalysis
+      tags: [analyses]
+      summary: Get a specific analysis by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analysis"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteAnalysis
+      tags: [analyses]
+      summary: Delete an analysis
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /analyses/text:
+    post:
+      operationId: analyzeText
+      tags: [analyses]
+      summary: Analyze text for scams (messages, emails, job offers)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TextAnalysisInput"
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analysis"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /analyses/url:
+    post:
+      operationId: analyzeUrl
+      tags: [analyses]
+      summary: Analyze a URL for phishing or malicious content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UrlAnalysisInput"
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analysis"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /analyses/image:
+    post:
+      operationId: analyzeImage
+      tags: [analyses]
+      summary: Analyze an uploaded screenshot or image for scams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageAnalysisInput"
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analysis"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats/summary:
+    get:
+      operationId: getStatsSummary
+      tags: [stats]
+      summary: Get dashboard summary statistics
+      responses:
+        "200":
+          description: Summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsSummary"
+
+  /stats/recent:
+    get:
+      operationId: getRecentThreats
+      tags: [stats]
+      summary: Get recent high-risk analyses
+      responses:
+        "200":
+          description: Recent threats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Analysis"
+
+  /stats/breakdown:
+    get:
+      operationId: getScamTypeBreakdown
+      tags: [stats]
+      summary: Get breakdown of scam types detected
+      responses:
+        "200":
+          description: Scam type counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScamTypeCount"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    TextAnalysisInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+        simpleMode:
+          type: boolean
+          description: If true, use Explain-like-I'm-60 mode
+
+    UrlAnalysisInput:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          minLength: 1
+        simpleMode:
+          type: boolean
+
+    ImageAnalysisInput:
+      type: object
+      required: [imageBase64, mimeType]
+      properties:
+        imageBase64:
+          type: string
+          description: Base64-encoded image data
+        mimeType:
+          type: string
+          description: MIME type of the image (e.g. image/jpeg)
+        simpleMode:
+          type: boolean
+
+    Analysis:
+      type: object
+      required:
+        - id
+        - inputType
+        - inputContent
+        - riskScore
+        - scamType
+        - severity
+        - redFlags
+        - explanation
+        - recommendations
+        - attackerGoal
+        - createdAt
+      properties:
+        id:
+          type: integer
+        inputType:
+          type: string
+          description: "text | url | image"
+        inputContent:
+          type: string
+          description: The original submitted content or URL
+        riskScore:
+          type: integer
+          description: 0–100 risk score
+        scamType:
+          type: string
+          description: e.g. Phishing, Job Scam, UPI Fraud, Investment Scam
+        severity:
+          type: string
+          description: "low | medium | high | critical"
+        redFlags:
+          type: array
+          items:
+            type: string
+        explanation:
+          type: string
+          description: Human-readable explanation of the analysis
+        recommendations:
+          type: array
+          items:
+            type: string
+        attackerGoal:
+          type: string
+          description: What the attacker is trying to achieve
+        simpleMode:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    StatsSummary:
+      type: object
+      required:
+        - totalAnalyses
+        - highRiskCount
+        - safeCount
+        - averageRiskScore
+        - scamsBlockedToday
+      properties:
+        totalAnalyses:
+          type: integer
+        highRiskCount:
+          type: integer
+        safeCount:
+          type: integer
+        averageRiskScore:
+          type: number
+        scamsBlockedToday:
+          type: integer
+
+    ScamTypeCount:
+      type: object
+      required: [scamType, count]
+      properties:
+        scamType:
+          type: string
+        count:
+          type: integer

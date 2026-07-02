@@ -34,13 +34,68 @@ export interface ImageAnalysisInput {
   simpleMode?: boolean;
 }
 
+/**
+ * Score from a single intelligence source
+ */
+export interface SignalSource {
+  /** 0–100 risk score from this source */
+  score?: number;
+  /** Weight of this source in the ensemble (0–1) */
+  weight?: number;
+  /** Human-readable verdict from this source */
+  verdict?: string;
+  /** Whether this source was reachable and returned data */
+  available?: boolean;
+  /** Error message if source was unavailable */
+  error?: string;
+}
+
+export type SignalBreakdownGemini = {
+  score?: number;
+  weight?: number;
+};
+
+export type SignalBreakdownVirustotal = SignalSource & {
+  malicious?: number;
+  suspicious?: number;
+  harmless?: number;
+  undetected?: number;
+};
+
+export type SignalBreakdownGoogleSafeBrowsing = SignalSource & {
+  threats?: string[];
+};
+
+export type SignalBreakdownPhishtank = SignalSource & {
+  isPhishing?: boolean;
+};
+
+export type SignalBreakdownDomainAge = SignalSource & ({
+  domain?: string;
+  registrationDate?: string | null;
+  ageInDays?: number | null;
+});
+
+/**
+ * Per-source signal breakdown for URL analyses
+ */
+export interface SignalBreakdown {
+  gemini?: SignalBreakdownGemini;
+  virustotal?: SignalBreakdownVirustotal;
+  google_safe_browsing?: SignalBreakdownGoogleSafeBrowsing;
+  phishtank?: SignalBreakdownPhishtank;
+  domain_age?: SignalBreakdownDomainAge;
+  /** Final blended ensemble score */
+  ensembleScore?: number;
+}
+
 export interface Analysis {
   id: number;
   /** text | url | image */
   inputType: string;
   /** The original submitted content or URL */
   inputContent: string;
-  /** 0–100 risk score */
+  /** 0–100 risk score (ensemble-blended for URL scans) */
   riskScore: number;
   /** e.g. Phishing, Job Scam, UPI Fraud, Investment Scam */
   scamType: string;
@@ -53,6 +108,8 @@ export interface Analysis {
   /** What the attacker is trying to achieve */
   attackerGoal: string;
   simpleMode?: boolean;
+  /** Per-source signal breakdown (only present for URL analyses) */
+  signals?: SignalBreakdown | null;
   createdAt: string;
 }
 

@@ -5,6 +5,7 @@
  * ScamShield AI API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { SignalBreakdown } from './signalBreakdown';
 
 export interface Analysis {
   id: number;
@@ -12,7 +13,7 @@ export interface Analysis {
   inputType: string;
   /** The original submitted content or URL */
   inputContent: string;
-  /** 0–100 risk score */
+  /** 0–100 risk score (ensemble-blended for URL scans) */
   riskScore: number;
   /** e.g. Phishing, Job Scam, UPI Fraud, Investment Scam */
   scamType: string;
@@ -25,5 +26,7 @@ export interface Analysis {
   /** What the attacker is trying to achieve */
   attackerGoal: string;
   simpleMode?: boolean;
+  /** Per-source signal breakdown (only present for URL analyses) */
+  signals?: SignalBreakdown | null;
   createdAt: Date;
 }

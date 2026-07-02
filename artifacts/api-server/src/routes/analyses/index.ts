@@ -10,6 +10,7 @@ import {
   ListAnalysesQueryParams,
 } from "@workspace/api-zod";
 import { analyzeContent, analyzeImage } from "../../lib/gemini";
+import { runUrlEnsemble } from "../../lib/ensemble";
 
 const router: IRouter = Router();
 
@@ -54,21 +55,23 @@ router.post("/analyses/url", async (req, res): Promise<void> => {
 
   const { url, simpleMode = false } = parsed.data;
 
-  const result = await analyzeContent("url", url, simpleMode);
+  const geminiResult = await analyzeContent("url", url, simpleMode);
+  const { finalResult, signals } = await runUrlEnsemble(url, geminiResult);
 
   const [analysis] = await db
     .insert(analysesTable)
     .values({
       inputType: "url",
       inputContent: url,
-      riskScore: result.riskScore,
-      scamType: result.scamType,
-      severity: result.severity,
-      redFlags: result.redFlags,
-      explanation: result.explanation,
-      recommendations: result.recommendations,
-      attackerGoal: result.attackerGoal,
+      riskScore: finalResult.riskScore,
+      scamType: finalResult.scamType,
+      severity: finalResult.severity,
+      redFlags: finalResult.redFlags,
+      explanation: finalResult.explanation,
+      recommendations: finalResult.recommendations,
+      attackerGoal: finalResult.attackerGoal,
       simpleMode,
+      signals,
     })
     .returning();
 

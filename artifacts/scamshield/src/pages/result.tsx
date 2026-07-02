@@ -3,9 +3,11 @@ import { useParams, Link } from "wouter";
 import { useGetAnalysis, getGetAnalysisQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, ArrowLeft, ShieldCheck, ShieldAlert, Target, Lightbulb } from "lucide-react";
+import { AlertCircle, ArrowLeft, ShieldCheck, ShieldAlert, Target, Lightbulb, Layers } from "lucide-react";
 import { Gauge, ThreatBadge } from "@/components/ui/gauge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SignalBreakdownCard } from "@/components/ui/signal-breakdown";
+import type { SignalBreakdown } from "@workspace/api-client-react";
 
 export function Result() {
   const params = useParams();
@@ -42,6 +44,9 @@ export function Result() {
     );
   }
 
+  const hasSignals = analysis.inputType === "url" && analysis.signals != null;
+  const signals = analysis.signals as SignalBreakdown | null | undefined;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
       <Link href="/" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-4">
@@ -51,9 +56,15 @@ export function Result() {
 
       <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between bg-card border rounded-xl p-6 md:p-8 shadow-sm">
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <ThreatBadge severity={analysis.severity} />
             <Badge variant="outline" className="font-mono">{analysis.inputType.toUpperCase()}</Badge>
+            {hasSignals && (
+              <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-blue-500/20 gap-1">
+                <Layers className="w-3 h-3" />
+                Multi-Source Analysis
+              </Badge>
+            )}
             {analysis.simpleMode && (
               <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">Simple Mode Active</Badge>
             )}
@@ -68,9 +79,28 @@ export function Result() {
 
         <div className="flex flex-col items-center justify-center p-4 bg-background rounded-lg border min-w-[160px]">
           <Gauge value={analysis.riskScore} />
-          <span className="text-sm font-semibold text-muted-foreground mt-2 uppercase tracking-widest">Risk Score</span>
+          <span className="text-sm font-semibold text-muted-foreground mt-2 uppercase tracking-widest">
+            {hasSignals ? "Ensemble Score" : "Risk Score"}
+          </span>
         </div>
       </div>
+
+      {hasSignals && signals && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Layers className="w-5 h-5 text-blue-500" />
+              Intelligence Sources
+              <span className="ml-auto text-xs font-normal text-muted-foreground font-mono">
+                4 sources · weighted ensemble
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <SignalBreakdownCard signals={signals} />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">

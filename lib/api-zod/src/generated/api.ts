@@ -32,7 +32,7 @@ export const ListAnalysesResponseItem = zod.object({
   "id": zod.number(),
   "inputType": zod.string().describe('text | url | image'),
   "inputContent": zod.string().describe('The original submitted content or URL'),
-  "riskScore": zod.number().describe('0–100 risk score'),
+  "riskScore": zod.number().describe('0–100 risk score (ensemble-blended for URL scans)'),
   "scamType": zod.string().describe('e.g. Phishing, Job Scam, UPI Fraud, Investment Scam'),
   "severity": zod.string().describe('low | medium | high | critical'),
   "redFlags": zod.array(zod.string()),
@@ -40,6 +40,54 @@ export const ListAnalysesResponseItem = zod.object({
   "recommendations": zod.array(zod.string()),
   "attackerGoal": zod.string().describe('What the attacker is trying to achieve'),
   "simpleMode": zod.boolean().optional(),
+  "signals": zod.object({
+  "gemini": zod.object({
+  "score": zod.number().optional(),
+  "weight": zod.number().optional()
+}).optional(),
+  "virustotal": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "malicious": zod.number().optional(),
+  "suspicious": zod.number().optional(),
+  "harmless": zod.number().optional(),
+  "undetected": zod.number().optional()
+})).optional(),
+  "google_safe_browsing": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "threats": zod.array(zod.string()).optional()
+})).optional(),
+  "phishtank": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "isPhishing": zod.boolean().optional()
+})).optional(),
+  "domain_age": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "domain": zod.string().optional(),
+  "registrationDate": zod.string().nullish(),
+  "ageInDays": zod.number().nullish()
+})).optional(),
+  "ensembleScore": zod.number().optional().describe('Final blended ensemble score')
+}).nullish().describe('Per-source signal breakdown (only present for URL analyses)'),
   "createdAt": zod.coerce.date()
 })
 export const ListAnalysesResponse = zod.array(ListAnalysesResponseItem)
@@ -56,7 +104,7 @@ export const GetAnalysisResponse = zod.object({
   "id": zod.number(),
   "inputType": zod.string().describe('text | url | image'),
   "inputContent": zod.string().describe('The original submitted content or URL'),
-  "riskScore": zod.number().describe('0–100 risk score'),
+  "riskScore": zod.number().describe('0–100 risk score (ensemble-blended for URL scans)'),
   "scamType": zod.string().describe('e.g. Phishing, Job Scam, UPI Fraud, Investment Scam'),
   "severity": zod.string().describe('low | medium | high | critical'),
   "redFlags": zod.array(zod.string()),
@@ -64,6 +112,54 @@ export const GetAnalysisResponse = zod.object({
   "recommendations": zod.array(zod.string()),
   "attackerGoal": zod.string().describe('What the attacker is trying to achieve'),
   "simpleMode": zod.boolean().optional(),
+  "signals": zod.object({
+  "gemini": zod.object({
+  "score": zod.number().optional(),
+  "weight": zod.number().optional()
+}).optional(),
+  "virustotal": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "malicious": zod.number().optional(),
+  "suspicious": zod.number().optional(),
+  "harmless": zod.number().optional(),
+  "undetected": zod.number().optional()
+})).optional(),
+  "google_safe_browsing": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "threats": zod.array(zod.string()).optional()
+})).optional(),
+  "phishtank": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "isPhishing": zod.boolean().optional()
+})).optional(),
+  "domain_age": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "domain": zod.string().optional(),
+  "registrationDate": zod.string().nullish(),
+  "ageInDays": zod.number().nullish()
+})).optional(),
+  "ensembleScore": zod.number().optional().describe('Final blended ensemble score')
+}).nullish().describe('Per-source signal breakdown (only present for URL analyses)'),
   "createdAt": zod.coerce.date()
 })
 
@@ -93,7 +189,7 @@ export const AnalyzeTextResponse = zod.object({
   "id": zod.number(),
   "inputType": zod.string().describe('text | url | image'),
   "inputContent": zod.string().describe('The original submitted content or URL'),
-  "riskScore": zod.number().describe('0–100 risk score'),
+  "riskScore": zod.number().describe('0–100 risk score (ensemble-blended for URL scans)'),
   "scamType": zod.string().describe('e.g. Phishing, Job Scam, UPI Fraud, Investment Scam'),
   "severity": zod.string().describe('low | medium | high | critical'),
   "redFlags": zod.array(zod.string()),
@@ -101,6 +197,54 @@ export const AnalyzeTextResponse = zod.object({
   "recommendations": zod.array(zod.string()),
   "attackerGoal": zod.string().describe('What the attacker is trying to achieve'),
   "simpleMode": zod.boolean().optional(),
+  "signals": zod.object({
+  "gemini": zod.object({
+  "score": zod.number().optional(),
+  "weight": zod.number().optional()
+}).optional(),
+  "virustotal": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "malicious": zod.number().optional(),
+  "suspicious": zod.number().optional(),
+  "harmless": zod.number().optional(),
+  "undetected": zod.number().optional()
+})).optional(),
+  "google_safe_browsing": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "threats": zod.array(zod.string()).optional()
+})).optional(),
+  "phishtank": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "isPhishing": zod.boolean().optional()
+})).optional(),
+  "domain_age": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "domain": zod.string().optional(),
+  "registrationDate": zod.string().nullish(),
+  "ageInDays": zod.number().nullish()
+})).optional(),
+  "ensembleScore": zod.number().optional().describe('Final blended ensemble score')
+}).nullish().describe('Per-source signal breakdown (only present for URL analyses)'),
   "createdAt": zod.coerce.date()
 })
 
@@ -120,7 +264,7 @@ export const AnalyzeUrlResponse = zod.object({
   "id": zod.number(),
   "inputType": zod.string().describe('text | url | image'),
   "inputContent": zod.string().describe('The original submitted content or URL'),
-  "riskScore": zod.number().describe('0–100 risk score'),
+  "riskScore": zod.number().describe('0–100 risk score (ensemble-blended for URL scans)'),
   "scamType": zod.string().describe('e.g. Phishing, Job Scam, UPI Fraud, Investment Scam'),
   "severity": zod.string().describe('low | medium | high | critical'),
   "redFlags": zod.array(zod.string()),
@@ -128,6 +272,54 @@ export const AnalyzeUrlResponse = zod.object({
   "recommendations": zod.array(zod.string()),
   "attackerGoal": zod.string().describe('What the attacker is trying to achieve'),
   "simpleMode": zod.boolean().optional(),
+  "signals": zod.object({
+  "gemini": zod.object({
+  "score": zod.number().optional(),
+  "weight": zod.number().optional()
+}).optional(),
+  "virustotal": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "malicious": zod.number().optional(),
+  "suspicious": zod.number().optional(),
+  "harmless": zod.number().optional(),
+  "undetected": zod.number().optional()
+})).optional(),
+  "google_safe_browsing": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "threats": zod.array(zod.string()).optional()
+})).optional(),
+  "phishtank": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "isPhishing": zod.boolean().optional()
+})).optional(),
+  "domain_age": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "domain": zod.string().optional(),
+  "registrationDate": zod.string().nullish(),
+  "ageInDays": zod.number().nullish()
+})).optional(),
+  "ensembleScore": zod.number().optional().describe('Final blended ensemble score')
+}).nullish().describe('Per-source signal breakdown (only present for URL analyses)'),
   "createdAt": zod.coerce.date()
 })
 
@@ -145,7 +337,7 @@ export const AnalyzeImageResponse = zod.object({
   "id": zod.number(),
   "inputType": zod.string().describe('text | url | image'),
   "inputContent": zod.string().describe('The original submitted content or URL'),
-  "riskScore": zod.number().describe('0–100 risk score'),
+  "riskScore": zod.number().describe('0–100 risk score (ensemble-blended for URL scans)'),
   "scamType": zod.string().describe('e.g. Phishing, Job Scam, UPI Fraud, Investment Scam'),
   "severity": zod.string().describe('low | medium | high | critical'),
   "redFlags": zod.array(zod.string()),
@@ -153,6 +345,54 @@ export const AnalyzeImageResponse = zod.object({
   "recommendations": zod.array(zod.string()),
   "attackerGoal": zod.string().describe('What the attacker is trying to achieve'),
   "simpleMode": zod.boolean().optional(),
+  "signals": zod.object({
+  "gemini": zod.object({
+  "score": zod.number().optional(),
+  "weight": zod.number().optional()
+}).optional(),
+  "virustotal": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "malicious": zod.number().optional(),
+  "suspicious": zod.number().optional(),
+  "harmless": zod.number().optional(),
+  "undetected": zod.number().optional()
+})).optional(),
+  "google_safe_browsing": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "threats": zod.array(zod.string()).optional()
+})).optional(),
+  "phishtank": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "isPhishing": zod.boolean().optional()
+})).optional(),
+  "domain_age": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "domain": zod.string().optional(),
+  "registrationDate": zod.string().nullish(),
+  "ageInDays": zod.number().nullish()
+})).optional(),
+  "ensembleScore": zod.number().optional().describe('Final blended ensemble score')
+}).nullish().describe('Per-source signal breakdown (only present for URL analyses)'),
   "createdAt": zod.coerce.date()
 })
 
@@ -176,7 +416,7 @@ export const GetRecentThreatsResponseItem = zod.object({
   "id": zod.number(),
   "inputType": zod.string().describe('text | url | image'),
   "inputContent": zod.string().describe('The original submitted content or URL'),
-  "riskScore": zod.number().describe('0–100 risk score'),
+  "riskScore": zod.number().describe('0–100 risk score (ensemble-blended for URL scans)'),
   "scamType": zod.string().describe('e.g. Phishing, Job Scam, UPI Fraud, Investment Scam'),
   "severity": zod.string().describe('low | medium | high | critical'),
   "redFlags": zod.array(zod.string()),
@@ -184,6 +424,54 @@ export const GetRecentThreatsResponseItem = zod.object({
   "recommendations": zod.array(zod.string()),
   "attackerGoal": zod.string().describe('What the attacker is trying to achieve'),
   "simpleMode": zod.boolean().optional(),
+  "signals": zod.object({
+  "gemini": zod.object({
+  "score": zod.number().optional(),
+  "weight": zod.number().optional()
+}).optional(),
+  "virustotal": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "malicious": zod.number().optional(),
+  "suspicious": zod.number().optional(),
+  "harmless": zod.number().optional(),
+  "undetected": zod.number().optional()
+})).optional(),
+  "google_safe_browsing": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "threats": zod.array(zod.string()).optional()
+})).optional(),
+  "phishtank": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "isPhishing": zod.boolean().optional()
+})).optional(),
+  "domain_age": zod.object({
+  "score": zod.number().optional().describe('0–100 risk score from this source'),
+  "weight": zod.number().optional().describe('Weight of this source in the ensemble (0–1)'),
+  "verdict": zod.string().optional().describe('Human-readable verdict from this source'),
+  "available": zod.boolean().optional().describe('Whether this source was reachable and returned data'),
+  "error": zod.string().optional().describe('Error message if source was unavailable')
+}).describe('Score from a single intelligence source').and(zod.object({
+  "domain": zod.string().optional(),
+  "registrationDate": zod.string().nullish(),
+  "ageInDays": zod.number().nullish()
+})).optional(),
+  "ensembleScore": zod.number().optional().describe('Final blended ensemble score')
+}).nullish().describe('Per-source signal breakdown (only present for URL analyses)'),
   "createdAt": zod.coerce.date()
 })
 export const GetRecentThreatsResponse = zod.array(GetRecentThreatsResponseItem)

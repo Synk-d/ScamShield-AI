@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -14,6 +14,7 @@ export const analysesTable = pgTable("analyses", {
   recommendations: text("recommendations").array().notNull().default([]),
   attackerGoal: text("attacker_goal").notNull(),
   simpleMode: boolean("simple_mode").notNull().default(false),
+  signals: jsonb("signals").default(null),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

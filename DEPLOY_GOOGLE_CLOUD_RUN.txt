@@ -1,0 +1,187 @@
+HOW TO DEPLOY SCAMSHIELD AI ON GOOGLE CLOUD RUN
+=================================================
+
+Your app will be live at a URL like:
+https://scamshield-ai-abc123-uc.a.run.app
+
+No GitHub needed. You deploy directly from your computer.
+Estimated time: 20-30 minutes.
+Cost: FREE for low traffic (Cloud Run free tier = 2 million requests/month)
+
+
+WHAT YOU NEED
+-------------
+1. A Google account (Gmail is fine)
+2. A credit card to activate Google Cloud (you won't be charged — it's just for verification)
+3. The extracted project folder on your computer
+4. A free PostgreSQL database from Neon (takes 2 minutes to set up)
+
+
+PART 1 — SET UP YOUR FREE DATABASE
+-------------------------------------
+
+Google Cloud SQL costs money, so we'll use Neon — a free hosted PostgreSQL.
+
+1. Go to https://neon.tech and click "Sign Up" (use your Google account)
+
+2. Click "Create Project"
+   - Project name: scamshield
+   - Region: choose the closest to you (e.g. US East, EU)
+   - Click "Create Project"
+
+3. On the dashboard, find the "Connection string" section
+   Click "Connection string" and copy the full string — it looks like:
+   postgresql://username:password@ep-something.us-east-2.aws.neon.tech/neondb?sslmode=require
+
+4. Save this — it's your DATABASE_URL
+
+
+PART 2 — INSTALL GOOGLE CLOUD CLI
+------------------------------------
+
+The CLI lets you deploy from your terminal with one command.
+
+On Mac:
+   curl https://sdk.cloud.google.com | bash
+   exec -l $SHELL
+   gcloud init
+
+On Windows:
+   Download and run the installer from:
+   https://cloud.google.com/sdk/docs/install
+   Then open a new Command Prompt and run: gcloud init
+
+The "gcloud init" command will:
+- Open your browser and ask you to log in with your Google account
+- Ask you to select or create a project — type a unique name like "scamshield-ai-2024"
+
+
+PART 3 — CREATE A GOOGLE CLOUD PROJECT
+-----------------------------------------
+
+If you didn't create one during gcloud init, do it now:
+
+1. Go to https://console.cloud.google.com
+2. Click the project dropdown at the top → "New Project"
+3. Name it: scamshield-ai
+4. Click "Create"
+5. Wait 30 seconds, then select the project from the dropdown
+
+6. Enable billing (required even for free tier):
+   - Go to https://console.cloud.google.com/billing
+   - Link a credit card — you will NOT be charged for normal usage
+
+7. Enable the Cloud Run API:
+   Run this in your terminal:
+   gcloud services enable run.googleapis.com --project=YOUR_PROJECT_ID
+   gcloud services enable cloudbuild.googleapis.com --project=YOUR_PROJECT_ID
+
+   Replace YOUR_PROJECT_ID with your project ID (shown in the console URL)
+
+
+PART 4 — DEPLOY THE APP
+--------------------------
+
+1. Open a terminal inside your extracted project folder
+   (the folder that contains Dockerfile, package.json, artifacts/, lib/, etc.)
+
+2. Set your project:
+   gcloud config set project YOUR_PROJECT_ID
+
+3. Run the deploy command:
+
+   gcloud run deploy scamshield-ai \
+     --source . \
+     --region us-central1 \
+     --platform managed \
+     --allow-unauthenticated \
+     --set-env-vars DATABASE_URL="YOUR_NEON_DATABASE_URL",GEMINI_API_KEY="YOUR_GEMINI_KEY",SESSION_SECRET="any_random_string_here",NODE_ENV="production",PORT="8080"
+
+   Replace:
+   - YOUR_NEON_DATABASE_URL  → the connection string from Part 1
+   - YOUR_GEMINI_KEY         → your Google Gemini API key from https://aistudio.google.com/app/apikey
+   - any_random_string_here  → type any random text like "MyS3cretKey2024!"
+
+   WINDOWS users — use this format instead (no backslashes):
+   gcloud run deploy scamshield-ai --source . --region us-central1 --platform managed --allow-unauthenticated --set-env-vars DATABASE_URL="YOUR_NEON_DATABASE_URL",GEMINI_API_KEY="YOUR_GEMINI_KEY",SESSION_SECRET="anyRandomString",NODE_ENV="production",PORT="8080"
+
+4. When asked "Allow unauthenticated invocations?" → type Y and press Enter
+
+5. The build takes 5-10 minutes. You'll see progress in the terminal.
+
+6. When it finishes, you'll see:
+   Service URL: https://scamshield-ai-abc123-uc.a.run.app
+
+   Open that URL — your app is live on Google Cloud!
+
+
+PART 5 — SET UP THE DATABASE TABLES
+--------------------------------------
+
+After the first deployment, you need to create the database tables.
+The easiest way is to use Neon's built-in SQL editor:
+
+1. Go to https://console.neon.tech and open your project
+2. Click "SQL Editor" in the left sidebar
+3. Copy and paste this SQL and click "Run":
+
+CREATE TABLE IF NOT EXISTS analyses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  input_type TEXT NOT NULL,
+  input_content TEXT NOT NULL,
+  risk_score INTEGER NOT NULL,
+  scam_type TEXT NOT NULL,
+  severity TEXT NOT NULL,
+  red_flags TEXT[] NOT NULL DEFAULT '{}',
+  explanation TEXT NOT NULL,
+  recommendations TEXT[] NOT NULL DEFAULT '{}',
+  attacker_goal TEXT NOT NULL,
+  simple_mode BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+   OR — run the schema push from your terminal:
+   DATABASE_URL="YOUR_NEON_DATABASE_URL" pnpm --filter @workspace/db run push
+
+
+PART 6 — UPDATE THE APP LATER
+---------------------------------
+
+Whenever you make changes, just run the deploy command again from your project folder:
+
+   gcloud run deploy scamshield-ai --source . --region us-central1 --platform managed --allow-unauthenticated
+
+Cloud Run will rebuild and redeploy — zero downtime.
+
+
+PART 7 — (OPTIONAL) CUSTOM DOMAIN
+-------------------------------------
+
+1. Go to https://console.cloud.google.com/run
+2. Click your "scamshield-ai" service
+3. Click "Manage Custom Domains"
+4. Add your domain and follow the DNS instructions
+5. Google provides a free HTTPS certificate automatically
+
+
+TROUBLESHOOTING
+---------------
+
+"gcloud: command not found"
+  → Close and reopen your terminal after installing the CLI
+
+"Permission denied" or "API not enabled"
+  → Run: gcloud services enable run.googleapis.com cloudbuild.googleapis.com
+
+Build fails with "Dockerfile not found"
+  → Make sure you're running the command from INSIDE the project folder
+  → Type "ls" (Mac/Linux) or "dir" (Windows) — you should see Dockerfile listed
+
+App deploys but shows database error
+  → Go to Neon SQL editor and run the CREATE TABLE command from Part 5
+
+"PORT" error in logs
+  → Make sure PORT="8080" is included in your --set-env-vars
+
+View live logs at any time:
+  gcloud run logs tail scamshield-ai --region us-central1

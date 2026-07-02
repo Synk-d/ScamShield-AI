@@ -1,139 +1,160 @@
-ScamShield AI
-=============
+# ScamShield AI
 
-An AI-powered scam detection platform. Paste a suspicious message, enter a URL,
-upload a screenshot, or scan a QR code with your camera. Gemini AI analyzes it
-and returns a full threat report with a risk score, red flags, attacker goal,
-and recommendations.
+A multimodal AI-powered scam detection platform. Paste a suspicious message, enter a URL, upload a screenshot, or scan a QR code with your camera — Gemini AI analyzes it and returns a full threat report with a risk score, red flags, attacker goal, and recommendations.
 
+![ScamShield Dashboard](https://i.imgur.com/placeholder.png)
 
-FEATURES
---------
-- Text analysis: paste emails, SMS, or any suspicious message
-- URL scanning: check links before you click them
-- Image analysis: upload screenshots of suspicious content
-- QR code scanner: use your device camera to scan and analyze QR codes
-- Simple Mode: plain-language explanations for non-technical users
-- Scan history: review all past analyses
-- Dashboard: stats, threat breakdown chart, and recent high-risk alerts
+## Features
 
+- **Text analysis** — paste emails, SMS, or any suspicious message
+- **URL scanning** — check links before you click them
+- **Image analysis** — upload screenshots of suspicious content
+- **QR code scanner** — use your device camera to scan and analyze QR codes
+- **Simple Mode** — plain-language explanations for non-technical users
+- **Scan history** — review all past analyses
+- **Dashboard** — stats, threat breakdown chart, and recent high-risk alerts
 
-REQUIREMENTS
-------------
-Before you begin, make sure you have the following installed:
+## Tech Stack
 
-1. Node.js (version 20 or higher)
-   Download: https://nodejs.org
+| Layer | Technology |
+|---|---|
+| Frontend | React + Vite, Wouter, TanStack Query, shadcn/ui, Recharts |
+| Backend | Express 5, Node.js 24 |
+| Database | PostgreSQL + Drizzle ORM |
+| AI | Google Gemini 2.5 Flash |
+| Language | TypeScript (monorepo via pnpm workspaces) |
 
-2. pnpm (package manager)
-   Install by running: npm install -g pnpm
+---
 
-3. PostgreSQL (version 14 or higher)
-   Download: https://www.postgresql.org/download/
-   OR use a free hosted database at: https://neon.tech
+## Local Setup
 
-4. Google Gemini API Key (free)
-   Get one at: https://aistudio.google.com/app/apikey
+### Prerequisites
 
+| Tool | Version | Install |
+|---|---|---|
+| Node.js | 20+ | [nodejs.org](https://nodejs.org) |
+| pnpm | latest | `npm install -g pnpm` |
+| PostgreSQL | 14+ | [postgresql.org](https://www.postgresql.org/download/) or use [Neon](https://neon.tech) (free hosted) |
+| Gemini API key | — | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
 
-SETUP INSTRUCTIONS
-------------------
+---
 
-Step 1: Extract the project files
-   tar -xzf scamshield-project.tar.gz
-   cd workspace
+### 1. Clone the repository
 
-Step 2: Install all dependencies
-   pnpm install
+```bash
+git clone https://github.com/your-username/scamshield-ai.git
+cd scamshield-ai
+```
 
-Step 3: Create a .env file in the root folder
-   Create a file named ".env" and add the following lines:
+### 2. Install dependencies
 
-   
-   DATABASE_URL=postgresql://youruser:yourpassword@localhost:5432/scamshield
-   
-   GEMINI_API_KEY=your_gemini_api_key_here
-   
-   SESSION_SECRET=any_random_string_you_choose
+```bash
+pnpm install
+```
 
-   Replace the values with your actual database credentials and API key.
+### 3. Set up environment variables
 
-   TIP: If you don't want to install PostgreSQL locally, sign up for a free
-   database at https://neon.tech and paste the connection string they give you
-   as the DATABASE_URL value.
+Create a `.env` file in the project root:
 
-Step 4: Set up the database tables
-  
-   pnpm --filter @workspace/db run push
+```env
+# PostgreSQL connection string
+DATABASE_URL=postgresql://youruser:yourpassword@localhost:5432/scamshield
 
-Step 5: (Optional) Load sample data
-   
-   pnpm --filter @workspace/db run seed
-   
-   This adds 5 demo scans so the dashboard is not empty on first launch.
+# Google Gemini API key (get one free at https://aistudio.google.com/app/apikey)
+GEMINI_API_KEY=your_gemini_api_key_here
 
+# Any random string used to sign sessions
+SESSION_SECRET=your_random_secret_here
+```
 
-Step 6: Start the backend API server
+> **Tip:** If you don't want to install PostgreSQL locally, create a free database at [neon.tech](https://neon.tech) and paste the connection string they provide.
 
-   Open a terminal window and run:
-   
-   PORT=5000 pnpm --filter @workspace/api-server run dev
+### 4. Push the database schema
 
-   Keep this terminal running.
+```bash
+pnpm --filter @workspace/db run push
+```
 
-Step 7: Start the frontend
-   
-   Open a SECOND terminal window and run:
-   
-   PORT=3000 BASE_URL=/ pnpm --filter @workspace/scamshield run dev
+This creates all the required tables in your database.
 
-   Keep this terminal running too.
+### 5. (Optional) Seed demo data
 
-Step 8: Open the app in your browser
-   
-   Go to: http://localhost:3000
+```bash
+pnpm --filter @workspace/db run seed
+```
 
+Adds 5 sample scans so the dashboard and history aren't empty on first launch.
 
-ENVIRONMENT VARIABLES
----------------------
-DATABASE_URL   - Your PostgreSQL connection string (required)
+### 6. Start the servers
 
-GEMINI_API_KEY - Your Google Gemini API key (required)
+Open **two terminal windows**:
 
-SESSION_SECRET - Any random string for session security (required)
+**Terminal 1 — API server** (runs on port 5000):
+```bash
+PORT=5000 pnpm --filter @workspace/api-server run dev
+```
 
+**Terminal 2 — Frontend** (runs on port 3000):
+```bash
+PORT=3000 BASE_URL=/ pnpm --filter @workspace/scamshield run dev
+```
 
-USEFUL COMMANDS
----------------
-Regenerate API code from spec:
-   
-   pnpm --filter @workspace/api-spec run codegen
+### 7. Open the app
 
+```
+http://localhost:3000
+```
 
-Run TypeScript type checks:
+---
 
-   pnpm run typecheck
+## Project Structure
 
+```
+.
+├── artifacts/
+│   ├── api-server/          # Express API backend
+│   │   └── src/
+│   │       ├── routes/
+│   │       │   ├── analyses/    # Text, URL, image analysis endpoints
+│   │       │   └── stats/       # Dashboard stats endpoints
+│   │       └── lib/
+│   │           └── gemini.ts    # Gemini AI client & prompt logic
+│   └── scamshield/          # React + Vite frontend
+│       └── src/
+│           ├── pages/           # Home, Result, History, Dashboard
+│           └── components/      # UI components (gauge, qr-scanner, layout)
+├── lib/
+│   ├── api-spec/            # OpenAPI spec (source of truth for the API contract)
+│   ├── api-client-react/    # Auto-generated TanStack Query hooks
+│   ├── api-zod/             # Auto-generated Zod validation schemas
+│   └── db/                  # Drizzle ORM schema & migrations
+└── pnpm-workspace.yaml
+```
 
-Push database schema changes:
+---
 
-   pnpm --filter @workspace/db run push
+## Available Scripts
 
+| Command | Description |
+|---|---|
+| `pnpm --filter @workspace/api-server run dev` | Start API server in dev mode |
+| `pnpm --filter @workspace/scamshield run dev` | Start frontend in dev mode |
+| `pnpm --filter @workspace/db run push` | Push schema to database |
+| `pnpm --filter @workspace/api-spec run codegen` | Regenerate API hooks from OpenAPI spec |
+| `pnpm run typecheck` | Full TypeScript check across all packages |
 
+---
 
-PROJECT FOLDER OVERVIEW
------------------------
-artifacts/api-server/    - Express backend API
+## Environment Variables Reference
 
-artifacts/scamshield/    - React frontend app
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `GEMINI_API_KEY` | Yes | Google Gemini API key |
+| `SESSION_SECRET` | Yes | Secret string for session signing |
 
-lib/api-spec/            - OpenAPI spec (API contract)
+---
 
-lib/db/                  - Database schema and migrations
+## License
 
-lib/api-client-react/    - Auto-generated API hooks for the frontend
-
-
-LICENSE
--------
 MIT
